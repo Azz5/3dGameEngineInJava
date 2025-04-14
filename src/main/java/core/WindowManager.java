@@ -8,6 +8,9 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 public class WindowManager {
 
     public static final float FOV = (float) Math.toRadians(60);
@@ -152,6 +155,12 @@ public class WindowManager {
     }
 
     public Matrix4f updateProjectMatrix() {
+        OutputStream stream = new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                System.nanoTime();
+            }
+        };
         float aspectRatio = (float) width / height;
         return projectionMatrix.setPerspective(FOV,aspectRatio,Z_NEAR,Z_FAR);
     }
