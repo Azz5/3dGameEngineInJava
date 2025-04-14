@@ -2,6 +2,7 @@ package core;
 
 import Test.LaunchTest;
 import core.entity.Model;
+import core.utils.Utils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -9,22 +10,28 @@ import org.lwjgl.opengl.GL30;
 public class RenderManager {
 
     private final WindowManager window;
+    private ShaderManager shader;
 
     public RenderManager() {
         window = LaunchTest.getWindow();
     }
 
     public void init() throws Exception {
-
+        shader = new ShaderManager();
+        shader.createVertexShader(Utils.loadResource("/shader/vertex.vs"));
+        shader.createFragmentShader(Utils.loadResource("/shader/fragment.fs"));
+        shader.link();
     }
 
     public void render(Model model) {
         clear();
+        shader.bind();
         GL30.glBindVertexArray(model.getId());
         GL20.glEnableVertexAttribArray(0);
         GL11.glDrawArrays(GL11.GL_TRIANGLES,0,model.getVertexCount());
         GL20.glDisableVertexAttribArray(0);
         GL30.glBindVertexArray(0);
+        shader.unbind();
     }
 
     public void clear() {
@@ -32,6 +39,6 @@ public class RenderManager {
     }
 
     public void cleanup() {
-
+        shader.cleanup();
     }
 }
