@@ -1,6 +1,20 @@
 package core;
 
+import core.entity.Material;
+import core.lighting.DirectionalLight;
+import core.utils.Utils;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.system.MemoryStack;
+
+import java.nio.IntBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ShaderManager {
 
@@ -8,6 +22,7 @@ public class ShaderManager {
 
     private int vertexShaderId, fragmentShaderId;
 
+    private final Map<String , Integer> uniforms;
 
     public ShaderManager() throws Exception {
         PROGRAMID = GL20.glCreateProgram();
@@ -15,6 +30,104 @@ public class ShaderManager {
         if (PROGRAMID == 0) {
             throw new Exception("Could not create shader");
         }
+
+        uniforms = new HashMap<>();
+    }
+
+    public void createUniform(String uniformName) throws Exception {
+        System.out.println(uniformName);
+        int uniformLocation = GL20.glGetUniformLocation(PROGRAMID,uniformName);
+        if (uniformLocation < 0) {
+
+/* Only use if there is error in shaders
+            int uniformCount = GL20.glGetProgrami(PROGRAMID, GL20.GL_ACTIVE_UNIFORMS);
+
+            int maxNameLength = GL20.glGetProgrami(PROGRAMID, GL20.GL_ACTIVE_UNIFORM_MAX_LENGTH);
+
+            IntBuffer sizeBuf = BufferUtils.createIntBuffer(1);
+            IntBuffer typeBuf = BufferUtils.createIntBuffer(1);
+
+            System.out.printf("There are %d active uniforms, max name length %d%n",
+                    uniformCount, maxNameLength);
+
+            for (int i = 0; i < uniformCount; i++) {
+                // this overload pulls back name, size & type in one go
+                String name = GL20.glGetActiveUniform(PROGRAMID, i, maxNameLength, sizeBuf, typeBuf);
+
+
+                int size = sizeBuf.get(0);
+                int type = typeBuf.get(0);
+
+                System.out.printf("Uniform #%d → name=\"%s\", size=%d, type=0x%X%n",
+                        i, name, size, type);
+                sizeBuf.rewind();
+                typeBuf.rewind();
+            }
+
+            */
+
+
+
+            throw new Exception("Could not find uniform " + uniformName);
+        }
+        uniforms.put(uniformName,uniformLocation);
+    }
+
+    public void createDirectionalLightUnifrom(String uniformName) throws Exception {
+        createUniform(uniformName + ".colour");
+        createUniform(uniformName + ".direction");
+        createUniform(uniformName + ".intensity");
+    }
+
+    public void createMaterialUniform(String uniformName) throws Exception {
+        createUniform(uniformName+".ambient");
+        createUniform(uniformName+".diffuse");
+        createUniform(uniformName+".specular");
+        createUniform(uniformName+".hasTexture");
+        createUniform(uniformName+".reflectance");
+    }
+
+
+    public void setUniforms(String uniformName, Matrix4f value) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            GL20.glUniformMatrix4fv(uniforms.get(uniformName),false,value.get(stack.mallocFloat(16)));
+        }
+    }
+    public void setUniforms(String uniformName, Vector4f value) {
+        GL20.glUniform4f(uniforms.get(uniformName),value.x,value.y,value.z, value.w);
+    }
+
+    public void setUniforms(String uniformName, Vector3f value) {
+        GL20.glUniform3f(uniforms.get(uniformName),value.x,value.y,value.z);
+    }
+
+    public void setUniforms(String uniformName, Material material){
+        setUniforms(uniformName+".ambient",material.getAmbientColour());
+        setUniforms(uniformName+".diffuse",material.getDiffuseColour());
+        setUniforms(uniformName+".specular",material.getSpecularColour());
+        setUniforms(uniformName+".hasTexture",material.hasTexture() ? 1 : 0);
+        setUniforms(uniformName+".reflectance",material.getReflectance());
+    }
+
+    public void setUniforms(String uniformName, DirectionalLight directionalLight) {
+        setUniforms(uniformName+ ".colour",directionalLight.getColour());
+        setUniforms(uniformName+ ".direction",directionalLight.getDirection());
+        setUniforms(uniformName+ ".intensity",directionalLight.getIntensity());
+    }
+
+    public void setUniforms(String uniformName, boolean value ) {
+        float res = 0;
+        if (value)
+            res = 1;
+        GL20.glUniform1f(uniforms.get(uniformName), res);
+    }
+
+    public void setUniforms(String uniformName, int value ) {
+        GL20.glUniform1i(uniforms.get(uniformName),value);
+    }
+
+    public void setUniforms(String uniformName, float value ) {
+        GL20.glUniform1f(uniforms.get(uniformName),value);
     }
 
     public void createVertexShader(String shaderCode) throws Exception {
