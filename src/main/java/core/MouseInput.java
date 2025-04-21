@@ -1,6 +1,6 @@
 package core;
 
-import Test.LaunchTest;
+import Test.MainTest.LaunchTest;
 import org.joml.Vector2d;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;

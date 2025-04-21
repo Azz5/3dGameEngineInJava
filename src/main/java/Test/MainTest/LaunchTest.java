@@ -1,4 +1,4 @@
-package Test;
+package Test.MainTest;
 
 import core.EngineManager;
 import core.WindowManager;

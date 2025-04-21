@@ -1,6 +1,6 @@
 package core;
 
-import Test.LaunchTest;
+import Test.MainTest.LaunchTest;
 import core.utils.Consts;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;

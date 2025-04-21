@@ -2,6 +2,8 @@ package core;
 
 import core.entity.Material;
 import core.lighting.DirectionalLight;
+import core.lighting.PointLight;
+import core.lighting.SpotLight;
 import core.utils.Utils;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -10,6 +12,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.system.CallbackI;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
@@ -79,6 +82,39 @@ public class ShaderManager {
         createUniform(uniformName + ".intensity");
     }
 
+    public void createPointLightUniform(String uniformName) throws Exception {
+        createUniform(uniformName + ".colour");
+        createUniform(uniformName + ".position");
+        createUniform(uniformName + ".intensity");
+        createUniform(uniformName + ".constant");
+        createUniform(uniformName + ".linear");
+        createUniform(uniformName + ".exponent");
+    }
+
+    public void createSpotLightUniform(String prefix) throws Exception {
+        // Register nested PointLight fields under SpotLight
+        createUniform(prefix + ".pl.colour");
+        createUniform(prefix + ".pl.position");
+        createUniform(prefix + ".pl.intensity");
+        createUniform(prefix + ".pl.constant");
+        createUniform(prefix + ".pl.linear");
+        createUniform(prefix + ".pl.exponent");
+        // Register SpotLight-specific fields
+        createUniform(prefix + ".conedir");
+        createUniform(prefix + ".cutoff");
+    }
+
+    public void createPointLightListUniform(String uniformName, int size) throws  Exception{
+        for (int i = 0; i < size; i++) {
+            createPointLightUniform(uniformName+"["+i+"]");
+        }
+    }
+    public void createSpotLightListUniform(String uniformName, int size) throws  Exception{
+        for (int i = 0; i < size; i++) {
+            createSpotLightUniform(uniformName+"["+i+"]");
+        }
+    }
+
     public void createMaterialUniform(String uniformName) throws Exception {
         createUniform(uniformName+".ambient");
         createUniform(uniformName+".diffuse");
@@ -101,6 +137,30 @@ public class ShaderManager {
         GL20.glUniform3f(uniforms.get(uniformName),value.x,value.y,value.z);
     }
 
+    public void setUniforms(String uniformName, PointLight[] pointLights) {
+        int numLights = pointLights != null ? pointLights.length : 0;
+        for (int i = 0; i < numLights; i++) {
+            setUniforms(uniformName,pointLights[i],i);
+        }
+    }
+
+    public void setUniforms(String uniformName, PointLight pointLight, int pos) {
+        setUniforms(uniformName+"["+pos+"]", pointLight);
+    }
+
+    public void setUniforms(String uniformName, SpotLight[] spotLights) {
+        int numLights = spotLights!= null ? spotLights.length : 0;
+        for (int i = 0; i < numLights; i++) {
+            setUniforms(uniformName,spotLights[i],i);
+        }
+    }
+
+    public void setUniforms(String uniformName, SpotLight spotLight, int pos) {
+        setUniforms(uniformName+"["+pos+"]", spotLight);
+    }
+
+
+
     public void setUniforms(String uniformName, Material material){
         setUniforms(uniformName+".ambient",material.getAmbientColour());
         setUniforms(uniformName+".diffuse",material.getDiffuseColour());
@@ -113,6 +173,26 @@ public class ShaderManager {
         setUniforms(uniformName+ ".colour",directionalLight.getColour());
         setUniforms(uniformName+ ".direction",directionalLight.getDirection());
         setUniforms(uniformName+ ".intensity",directionalLight.getIntensity());
+    }
+
+    public void setUniforms(String uniformName, PointLight pointLight) {
+        setUniforms(uniformName + ".colour",pointLight.getColour());
+        setUniforms(uniformName + ".position",pointLight.getPosition());
+        setUniforms(uniformName + ".intensity",pointLight.getIntensity());
+        setUniforms(uniformName + ".constant",pointLight.getConstant());
+        setUniforms(uniformName + ".linear",pointLight.getLinear());
+        setUniforms(uniformName + ".exponent",pointLight.getExponent());
+    }
+
+    public void setUniforms(String name, SpotLight light) {
+        setUniforms(name + ".pl.colour",    light.getPointLight().getColour());
+        setUniforms(name + ".pl.position",  light.getPointLight().getPosition());
+        setUniforms(name + ".pl.intensity", light.getPointLight().getIntensity());
+        setUniforms(name + ".pl.constant",  light.getPointLight().getConstant());
+        setUniforms(name + ".pl.linear",    light.getPointLight().getLinear());
+        setUniforms(name + ".pl.exponent",  light.getPointLight().getExponent());
+        setUniforms(name + ".conedir",      light.getConeDirection());
+        setUniforms(name + ".cutoff",       light.getCutoff());
     }
 
     public void setUniforms(String uniformName, boolean value ) {
