@@ -2,6 +2,7 @@ package core.utils;
 
 import core.Camera;
 import core.entity.Entity;
+import core.entity.terrain.Terrain;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -17,7 +18,13 @@ public class Transformation {
         return matrix;
     }
 
-    public static Matrix4f getViewMatrix(Camera camera) {
+    public static Matrix4f createTransformationMatrix(Terrain terrain) {
+        Matrix4f matrix = new Matrix4f();
+        matrix.identity().translate(terrain.getPosition()).scale(1);
+        return matrix;
+    }
+
+        public static Matrix4f getViewMatrix(Camera camera) {
         Vector3f position = camera.getPosition();
         Vector3f rotation = camera.getRotation();
 

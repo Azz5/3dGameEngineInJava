@@ -6,6 +6,8 @@ import core.ShaderManager;
 import core.WindowManager;
 import core.entity.Entity;
 import core.entity.Model;
+import core.entity.SceneManager;
+import core.entity.terrain.Terrain;
 import core.lighting.DirectionalLight;
 import core.lighting.PointLight;
 import core.lighting.SpotLight;
@@ -26,6 +28,7 @@ public class RenderManager {
 
     private final WindowManager window;
     private EntityRender entityRender;
+    private TerrainRender terrainRender;
 
 
     public RenderManager() {
@@ -34,8 +37,10 @@ public class RenderManager {
 
     public void init() throws Exception {
         entityRender = new EntityRender();
+        terrainRender = new TerrainRender();
 
         entityRender.init();
+        terrainRender.init();
     }
 
     public static void renderLights(ShaderManager shader, PointLight[] pointLights, SpotLight[] spotLights, DirectionalLight directionalLight) {
@@ -56,7 +61,7 @@ public class RenderManager {
 
         shader.setUniforms("directionalLight", directionalLight);
     }
-    public void render(Camera camera, DirectionalLight directionalLight, PointLight[] pointLights, SpotLight[] spotLights) {
+    public void render(Camera camera, SceneManager sceneManager) {
         clear();
 
         if (window.isResize()) {
@@ -64,8 +69,15 @@ public class RenderManager {
             window.setResize(false);
         }
 
-        entityRender.render(camera,pointLights,spotLights,directionalLight);
+        entityRender.render(camera,sceneManager.getPointLights(),sceneManager.getSpotLights(),sceneManager.getDirectionalLight());
 
+        terrainRender.render(camera,sceneManager.getPointLights(), sceneManager.getSpotLights(), sceneManager.getDirectionalLight());
+
+    }
+
+
+    public void processTerrain(Terrain terrain) {
+        terrainRender.getTerrain().add(terrain);
     }
 
     public void processEntites(Entity entity) {
@@ -85,5 +97,6 @@ public class RenderManager {
 
     public void cleanup() {
         entityRender.cleanup();
+        terrainRender.cleanup();
     }
 }

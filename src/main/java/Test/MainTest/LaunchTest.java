@@ -1,15 +1,16 @@
 package Test.MainTest;
 
+import Test.MainTest.MinecraftLike.BlockGame;
 import core.EngineManager;
 import core.WindowManager;
 import core.utils.Consts;
 
 public class LaunchTest {
     private static WindowManager window;
-    private static TestGame game;
+    private static BlockGame game;
     public static void main(String[] args) {
         window = new WindowManager(Consts.TITLE,890,540,false);
-        game = new TestGame();
+        game = new BlockGame();
         EngineManager engineManager = new EngineManager();
 
         try {
@@ -23,7 +24,7 @@ public class LaunchTest {
         return window;
     }
 
-    public static TestGame getGame() {
+    public static BlockGame getGame() {
         return game;
     }
 }

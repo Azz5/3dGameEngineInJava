@@ -5,6 +5,7 @@ import core.utils.Utils;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -13,9 +14,13 @@ import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.CallbackI;
 import org.lwjgl.system.MemoryStack;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +29,11 @@ public class ObjectLoader {
     private List<Integer> vaos = new ArrayList<>();
     private List<Integer> vbos = new ArrayList<>();
     private List<Integer> textures = new ArrayList<>();
+
+    public static ObjectLoader getInstance() {
+        return new ObjectLoader();
+    }
+
 
     public Model loadOBJModel(String fileName) {
         List<String> lines = Utils.readAllLines(fileName);
@@ -140,32 +150,67 @@ public class ObjectLoader {
         return new Model(id, indices.length);
     }
 
-    public int loadTexture(String filename) throws Exception{
+    private static ByteBuffer ioResourceToByteBuffer(String resource, int initialBufferSize) throws IOException {
+        ByteBuffer buffer = BufferUtils.createByteBuffer(initialBufferSize);
+        try (InputStream in = Thread.currentThread()
+                .getContextClassLoader()
+                .getResourceAsStream(resource);
+             ReadableByteChannel rbc = Channels.newChannel(in)) {
+            while (rbc.read(buffer) != -1) {
+                if (buffer.remaining() == 0)
+                    buffer = resizeBuffer(buffer, buffer.capacity() * 2);  // Resize buffer if it fills up
+            }
+        }
+        buffer.flip();
+        return buffer;
+    }
+
+    // Utility method to resize the ByteBuffer
+    private static ByteBuffer resizeBuffer(ByteBuffer buffer, int newCapacity) {
+        ByteBuffer newBuffer = BufferUtils.createByteBuffer(newCapacity);
+        buffer.flip();
+        newBuffer.put(buffer);
+        return newBuffer;
+    }
+
+    // Main method to load a texture from classpath and create an OpenGL texture
+    public static int loadTexture(String resourcePath) throws Exception {
         int width, height;
-        ByteBuffer buffer;
+
+        // Attempt to load resource into ByteBuffer
+        ByteBuffer imageBuffer = ioResourceToByteBuffer(resourcePath, 8 * 1024);  // 8 KB buffer size
+
+        ByteBuffer decodedImage;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer w = stack.mallocInt(1);
             IntBuffer h = stack.mallocInt(1);
-            IntBuffer c = stack.mallocInt(1);
+            IntBuffer comp = stack.mallocInt(1);
 
-            buffer = STBImage.stbi_load(filename,w,h,c,4);
-            if (buffer == null) {
-                throw new Exception("Image File: "+filename+" Could not be loaded " + STBImage.stbi_failure_reason());
+            // Load the image from the ByteBuffer
+            decodedImage = STBImage.stbi_load_from_memory(imageBuffer, w, h, comp, 4);
+            if (decodedImage == null) {
+                throw new RuntimeException("Failed to load image: " +
+                        STBImage.stbi_failure_reason());
             }
 
-            width = w.get();
-            height = h.get();
+            width = w.get(0);
+            height = h.get(0);
         }
 
-        int id = GL11.glGenTextures();
-        textures.add(id);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D,id);
-        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT,1);
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D,0,GL11.GL_RGBA,width,height,0,GL11.GL_RGBA,GL11.GL_UNSIGNED_BYTE,buffer);
+        // Create OpenGL texture
+        int texId = GL11.glGenTextures();
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, texId);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA,
+                width, height, 0,
+                GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE,
+                decodedImage);
         GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
-        STBImage.stbi_image_free(buffer);
-        return id;
+        STBImage.stbi_image_free(decodedImage);
+
+        return texId;
     }
+
 
     private int createVAO() {
         int id = GL30.glGenVertexArrays();
