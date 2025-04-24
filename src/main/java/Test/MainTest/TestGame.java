@@ -31,7 +31,7 @@ public class TestGame implements ILogic {
         renderManager = new RenderManager();
         windowManager = LaunchTest.getWindow();
         loader = new ObjectLoader();
-        camera = new Camera();
+        camera = new Camera(new Vector3f(0,0,0),new Vector3f());
         cameraInc = new Vector3f(0,0,0);
         sceneManager = new SceneManager(-90);
     }

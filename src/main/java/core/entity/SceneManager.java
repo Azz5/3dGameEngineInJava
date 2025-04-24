@@ -29,6 +29,9 @@ public class SceneManager {
         terrains = new ArrayList<>();
 
         ambientLight = Consts.AMBIENT_LIGHT;
+        pointLights = new PointLight[]{};
+        spotLights= new SpotLight[]{};
+        directionalLight = new DirectionalLight(new Vector3f(0,0,0),new Vector3f(0,0,0),0);
         this.lightAngle = lightAngle;
     }
 
